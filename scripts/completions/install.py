@@ -32,6 +32,7 @@ ENTRYPOINTS = [
     "ns-dev-test",
     "ns-extract-mesh",
     "ns-render-mesh",
+    "ns-render-mesh-eval"
 ]
 
 

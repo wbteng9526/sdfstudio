@@ -95,6 +95,7 @@ ns-dev-test = "scripts.github.run_actions:entrypoint"
 ns-bridge-server = "nerfstudio.viewer.server.server:entrypoint"
 ns-extract-mesh = "scripts.extract_mesh:entrypoint"
 ns-render-mesh = "scripts.render_mesh:entrypoint"
+ns-render_mesh-eval = "scripts.render_mesh_eval:entrypoint"
 
 
 [options]

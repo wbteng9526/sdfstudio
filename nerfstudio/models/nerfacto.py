@@ -53,7 +53,7 @@ from nerfstudio.model_components.renderers import (
     NormalsRenderer,
     RGBRenderer,
 )
-from nerfstudio.model_components.scene_colliders import NearFarCollider
+from nerfstudio.model_components.scene_colliders import NearFarCollider, AABBBoxCollider
 from nerfstudio.models.base_model import Model, ModelConfig
 from nerfstudio.utils import colormaps
 from nerfstudio.utils.colors import get_color
@@ -68,7 +68,7 @@ class NerfactoModelConfig(ModelConfig):
     """How far along the ray to start sampling."""
     far_plane: float = 1000.0
     """How far along the ray to stop sampling."""
-    background_color: Literal["random", "last_sample", "white", "black"] = "last_sample"
+    background_color: Literal["random", "last_sample", "white", "black"] = "black"
     """Whether to randomize the background color."""
     num_levels: int = 16
     """Number of levels of the hashmap for the base mlp."""
@@ -130,7 +130,7 @@ class NerfactoModel(Model):
         """Set the fields and modules."""
         super().populate_modules()
 
-        scene_contraction = SceneContraction(order=float("inf"))
+        scene_contraction = None
 
         # Fields
         self.field = TCNNNerfactoField(
@@ -180,7 +180,8 @@ class NerfactoModel(Model):
         )
 
         # Collider
-        self.collider = NearFarCollider(near_plane=self.config.near_plane, far_plane=self.config.far_plane)
+        # self.collider = NearFarCollider(near_plane=self.config.near_plane, far_plane=self.config.far_plane)
+        self.collider = AABBBoxCollider(scene_box=self.scene_box)
 
         # renderers
         background_color = (
@@ -253,6 +254,7 @@ class NerfactoModel(Model):
             "rgb": rgb,
             "accumulation": accumulation,
             "depth": depth,
+            "weights": weights,
         }
 
         if self.config.predict_normals:
@@ -290,6 +292,13 @@ class NerfactoModel(Model):
 
     def get_loss_dict(self, outputs, batch, metrics_dict=None):
         loss_dict = {}
+        
+        weights = outputs['weights']
+        last_weights = torch.zeros_like(weights)
+        last_weights[:,1:,:] = weights[:,0:weights.shape[1]-1,:]
+        dwdt = weights-last_weights
+        loss_dict["weight_loss"] = torch.mean(torch.pow(dwdt, 2))
+
         image = batch["image"].to(self.device)
         loss_dict["rgb_loss"] = self.rgb_loss(image, outputs["rgb"])
         if self.training:

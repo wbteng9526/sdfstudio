@@ -21,6 +21,9 @@ from scipy.interpolate import interp1d
 from scipy.spatial.transform import Rotation, Slerp
 from typing_extensions import Literal, assert_never
 
+import pyrender
+import trimesh
+
 from torchmetrics.image import PeakSignalNoiseRatio
 from torchmetrics.functional import structural_similarity_index_measure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
@@ -33,6 +36,36 @@ from nerfstudio.data.dataparsers.sdfstudio_dataparser import SDFStudioDataParser
 from nerfstudio.utils import install_checks
 
 CONSOLE = Console(width=120)
+
+def _create_pyrender_scene(
+    meshfile: Path,
+) -> pyrender.Scene:
+    scene = pyrender.Scene(ambient_light=np.ones(3))
+    obj = trimesh.load(str(meshfile))
+
+    if not isinstance(objs, list):
+        objs = [objs]
+    
+    mesh = pyrender.Mesh.from_trimesh(obj)
+    scene.add(mesh)
+
+def _render_pyrender(
+    scene: pyrender.Scene,
+    width: int,
+    height: int,
+    cam_pose: np.array,
+    fx: float,
+    fy: float
+):
+    
+    fov_y = 2 * np.arctan(0.5 * height / fy)
+    camera = pyrender.PerspectiveCamera(fov_y, aspectRatio=fx / fy)
+    camera_node = pyrender.Node(camera=camera, matrix=cam_pose)
+    scene.add(camera_node)
+    r = pyrender.OffscreenRenderer(width, height)
+    img, depth = r.render(scene)
+    return img, depth
+    
 
 def _render_image(
     meshfile: Path,
@@ -51,6 +84,8 @@ def _render_image(
     ply = o3d.io.read_triangle_mesh(str(meshfile))
     ply.compute_vertex_normals()
     ply.paint_uniform_color([1, 1, 1])
+
+    pyrender_scene = _create_pyrender_scene(meshfile)
 
     vis = o3d.visualization.VisualizerWithKeyCallback()
     vis.create_window("rendering", width=width, height=height)

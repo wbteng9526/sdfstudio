@@ -204,7 +204,7 @@ class TSDF:
         voxel_world_coords = voxel_world_coords.expand(batch_size, *voxel_world_coords.shape[1:])  # [batch, 4, N]
 
         voxel_cam_coords = torch.bmm(torch.inverse(c2w), voxel_world_coords)  # [batch, 4, N]
-
+        del voxel_world_coords
         # flip the z axis
         voxel_cam_coords[:, 2, :] = -voxel_cam_coords[:, 2, :]
         # flip the y axis
@@ -216,6 +216,7 @@ class TSDF:
         voxel_cam_coords_z = voxel_cam_coords[:, 2:3, :]
         voxel_cam_points = torch.bmm(K, voxel_cam_coords[:, 0:3, :] / voxel_cam_coords_z)  # [batch, 3, N]
         voxel_pixel_coords = voxel_cam_points[:, :2, :]  # [batch, 2, N]
+        del voxel_cam_points
 
         # Sample the depth images with grid sample...
 

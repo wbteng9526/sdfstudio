@@ -7,7 +7,7 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, cast
 
 import numpy as np
 import open3d as o3d
@@ -22,6 +22,10 @@ from nerfstudio.exporter.exporter_utils import (
     generate_point_cloud,
     get_mesh_from_filename,
 )
+from nerfstudio.exporter.marching_cubes import (
+    generate_mesh_with_multires_marching_cubes,
+)
+from nerfstudio.fields.sdf_field import SDFField
 from nerfstudio.pipelines.base_pipeline import Pipeline
 from nerfstudio.utils.eval_utils import eval_setup
 
@@ -58,7 +62,7 @@ class ExportPointCloud(Exporter):
     """Minimum of the bounding box, used if use_bounding_box is True."""
     bounding_box_max: Tuple[float, float, float] = (1, 1, 1)
     """Minimum of the bounding box, used if use_bounding_box is True."""
-    num_rays_per_batch: int = 32768
+    num_rays_per_batch: int = 1024#32768
     """Number of rays to evaluate per batch. Decrease if you run out of memory."""
     std_ratio: float = 10.0
     """Threshold based on STD of the average distances across the point cloud to remove outliers."""
@@ -102,15 +106,15 @@ class ExportTSDFMesh(Exporter):
     Export a mesh using TSDF processing.
     """
 
-    downscale_factor: int = 1
+    downscale_factor: int = 2
     """Downscale the images starting from the resolution used for training."""
     depth_output_name: str = "depth"
     """Name of the depth output."""
     rgb_output_name: str = "rgb"
     """Name of the RGB output."""
-    resolution: Union[int, List[int]] = field(default_factory=lambda: [256, 256, 256])
+    resolution: Union[int, List[int]] = field(default_factory=lambda: [512, 512, 512])
     """Resolution of the TSDF volume or [x, y, z] resolutions individually."""
-    batch_size: int = 10
+    batch_size: int = 1
     """How many depth images to integrate per batch."""
     use_bounding_box: bool = True
     """Whether to use a bounding box for the TSDF volume."""
@@ -118,7 +122,7 @@ class ExportTSDFMesh(Exporter):
     """Minimum of the bounding box, used if use_bounding_box is True."""
     bounding_box_max: Tuple[float, float, float] = (1, 1, 1)
     """Minimum of the bounding box, used if use_bounding_box is True."""
-    texture_method: Literal["tsdf", "nerf"] = "nerf"
+    texture_method: Literal["tsdf", "nerf"] = "tsdf"
     """Method to texture the mesh with. Either 'tsdf' or 'nerf'."""
     px_per_uv_triangle: int = 4
     """Number of pixels per UV triangle."""
@@ -183,7 +187,7 @@ class ExportPoissonMesh(Exporter):
     """Name of the depth output."""
     rgb_output_name: str = "rgb"
     """Name of the RGB output."""
-    normal_method: Literal["open3d", "model_output"] = "model_output"
+    normal_method: Literal["open3d", "model_output"] = "open3d"
     """Method to estimate normals with."""
     normal_output_name: str = "normals"
     """Name of the normal output."""
@@ -195,7 +199,7 @@ class ExportPoissonMesh(Exporter):
     """Minimum of the bounding box, used if use_bounding_box is True."""
     bounding_box_max: Tuple[float, float, float] = (1, 1, 1)
     """Minimum of the bounding box, used if use_bounding_box is True."""
-    num_rays_per_batch: int = 32768
+    num_rays_per_batch: int = 1024#32768
     """Number of rays to evaluate per batch. Decrease if you run out of memory."""
     texture_method: Literal["point_cloud", "nerf"] = "nerf"
     """Method to texture the mesh with. Either 'point_cloud' or 'nerf'."""
@@ -309,9 +313,73 @@ class ExportMarchingCubesMesh(Exporter):
     Export a mesh using marching cubes.
     """
 
+    # def main(self) -> None:
+    #     """Export mesh"""
+    #     raise NotImplementedError("Marching cubes not implemented yet.")
+    """Export a mesh using marching cubes."""
+
+    isosurface_threshold: float = 0.0
+    """The isosurface threshold for extraction. For SDF based methods the surface is the zero level set."""
+    resolution: int = 512
+    """Marching cube resolution."""
+    simplify_mesh: bool = False
+    """Whether to simplify the mesh."""
+    bounding_box_min: Tuple[float, float, float] = (-1.0, -1.0, -1.0)
+    """Minimum of the bounding box."""
+    bounding_box_max: Tuple[float, float, float] = (1.0, 1.0, 1.0)
+    """Maximum of the bounding box."""
+    px_per_uv_triangle: int = 4
+    """Number of pixels per UV triangle."""
+    unwrap_method: Literal["xatlas", "custom"] = "xatlas"
+    """The method to use for unwrapping the mesh."""
+    num_pixels_per_side: int = 2048
+    """If using xatlas for unwrapping, the pixels per side of the texture image."""
+    target_num_faces: Optional[int] = None#50000
+    """Target number of faces for the mesh to texture."""
+
     def main(self) -> None:
-        """Export mesh"""
-        raise NotImplementedError("Marching cubes not implemented yet.")
+        """Main function."""
+        if not self.output_dir.exists():
+            self.output_dir.mkdir(parents=True)
+
+        _, pipeline, _ = eval_setup(self.load_config)
+
+        # TODO: Make this work with Density Field
+        assert hasattr(pipeline.model.config, "sdf_field"), "Model must have an SDF field."
+
+        CONSOLE.print("Extracting mesh with marching cubes... which may take a while")
+
+        assert (
+            self.resolution % 512 == 0
+        ), f"""resolution must be divisible by 512, got {self.resolution}.
+        This is important because the algorithm uses a multi-resolution approach
+        to evaluate the SDF where the minimum resolution is 512."""
+
+        # Extract mesh using marching cubes for sdf at a multi-scale resolution.
+        multi_res_mesh = generate_mesh_with_multires_marching_cubes(
+            geometry_callable_field=lambda x: cast(SDFField, pipeline.model.field)
+            .forward_geonetwork(x)[:, 0]
+            .contiguous(),
+            resolution=self.resolution,
+            bounding_box_min=self.bounding_box_min,
+            bounding_box_max=self.bounding_box_max,
+            isosurface_threshold=self.isosurface_threshold,
+            coarse_mask=None,
+        )
+        filename = self.output_dir / "sdf_marching_cubes_mesh.ply"
+        multi_res_mesh.export(filename)
+
+        # load the mesh from the marching cubes export
+        mesh = get_mesh_from_filename(str(filename), target_num_faces=self.target_num_faces)
+        CONSOLE.print("Texturing mesh with NeRF...")
+        texture_utils.export_textured_mesh(
+            mesh,
+            pipeline,
+            self.output_dir,
+            px_per_uv_triangle=self.px_per_uv_triangle if self.unwrap_method == "custom" else None,
+            unwrap_method=self.unwrap_method,
+            num_pixels_per_side=self.num_pixels_per_side,
+        )
 
 
 Commands = Union[

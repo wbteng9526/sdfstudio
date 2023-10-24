@@ -130,7 +130,7 @@ class NerfactoModel(Model):
         """Set the fields and modules."""
         super().populate_modules()
 
-        scene_contraction = None #SceneContraction(order=float("inf"))
+        scene_contraction = None
 
         # Fields
         self.field = TCNNNerfactoField(
@@ -254,7 +254,7 @@ class NerfactoModel(Model):
             "rgb": rgb,
             "accumulation": accumulation,
             "depth": depth,
-            "weights": weights
+            "weights": weights,
         }
 
         if self.config.predict_normals:
@@ -292,6 +292,13 @@ class NerfactoModel(Model):
 
     def get_loss_dict(self, outputs, batch, metrics_dict=None):
         loss_dict = {}
+        
+        weights = outputs['weights']
+        last_weights = torch.zeros_like(weights)
+        last_weights[:,1:,:] = weights[:,0:weights.shape[1]-1,:]
+        dwdt = weights-last_weights
+        loss_dict["weight_loss"] = torch.mean(torch.pow(dwdt, 2))
+
         image = batch["image"].to(self.device)
         loss_dict["rgb_loss"] = self.rgb_loss(image, outputs["rgb"])
         if self.training:

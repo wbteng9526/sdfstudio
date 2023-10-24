@@ -106,7 +106,7 @@ class ExportTSDFMesh(Exporter):
     Export a mesh using TSDF processing.
     """
 
-    downscale_factor: int = 2
+    downscale_factor: int = 1
     """Downscale the images starting from the resolution used for training."""
     depth_output_name: str = "depth"
     """Name of the depth output."""
@@ -114,7 +114,7 @@ class ExportTSDFMesh(Exporter):
     """Name of the RGB output."""
     resolution: Union[int, List[int]] = field(default_factory=lambda: [512, 512, 512])
     """Resolution of the TSDF volume or [x, y, z] resolutions individually."""
-    batch_size: int = 1
+    batch_size: int = 1 
     """How many depth images to integrate per batch."""
     use_bounding_box: bool = True
     """Whether to use a bounding box for the TSDF volume."""
@@ -122,7 +122,7 @@ class ExportTSDFMesh(Exporter):
     """Minimum of the bounding box, used if use_bounding_box is True."""
     bounding_box_max: Tuple[float, float, float] = (1, 1, 1)
     """Minimum of the bounding box, used if use_bounding_box is True."""
-    texture_method: Literal["tsdf", "nerf"] = "nerf"
+    texture_method: Literal["tsdf", "nerf"] = "tsdf"
     """Method to texture the mesh with. Either 'tsdf' or 'nerf'."""
     px_per_uv_triangle: int = 4
     """Number of pixels per UV triangle."""

@@ -270,8 +270,6 @@ def _parse_camera(camera_meta, data_dir):
 class RenderMeshEval:
     # Path to config YAML file.
     meshfile: Path
-    # Config file
-    load_config: Path
     # Original dataset direction
     data_dir: Path
     # Filename of the camera path to render.
@@ -292,8 +290,7 @@ class RenderMeshEval:
         """Main function."""
 
         install_checks.check_ffmpeg_installed()
-        config = yaml.load(self.load_config.read_text(), Loader=yaml.Loader)
-
+        
         if self.traj == "filename":
             self.camera_path_filename = self.data_dir / self.camera_path_filename
             with open(self.camera_path_filename, "r", encoding="utf-8") as f:

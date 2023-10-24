@@ -1,8 +1,7 @@
 ns-render-mesh-eval \
-    --meshfile outputs/neus-facto-dtu65/neus-facto/2023-10-19_150745/tsdf_mesh.ply \
-    --load_config outputs/neus-facto-dtu65/neus-facto/2023-10-19_150745/config.yml \
-    --data_dir /home/wteng/workspace/csci677/data/DTU/scan65/ \
+    --meshfile outputs/neus-facto-dtu24/neus-facto/2023-10-24_133055/tsdf_mesh.ply \
+    --data_dir ../data/dtu/scan24/ \
     --camera_path_filename meta_data.json \
-    --output_dir outputs/neus-facto-dtu65/neus-facto/2023-10-19_150745/eval \
+    --output_dir outputs/neus-facto-dtu24/neus-facto/2023-10-24_133055/eval \
     --eval_output_path eval.json \
     --traj filename

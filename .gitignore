@@ -163,7 +163,7 @@ cython_debug/
 
 # Experiments and outputs
 outputs/
-exports/
+export/
 renders/
 outputs
 vis/

@@ -28,6 +28,7 @@ from torch.nn import Parameter
 from torchmetrics.image import PeakSignalNoiseRatio
 from torchmetrics.functional import structural_similarity_index_measure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+from chamfer_distance import ChamferDistance
 from typing_extensions import Literal
 
 from nerfstudio.cameras.rays import RayBundle
@@ -143,6 +144,7 @@ class NGPModel(Model):
         self.psnr = PeakSignalNoiseRatio(data_range=1.0)
         self.ssim = structural_similarity_index_measure
         self.lpips = LearnedPerceptualImagePatchSimilarity()
+        self.chamf = ChamferDistance()
 
     def get_training_callbacks(
         self, training_callback_attributes: TrainingCallbackAttributes

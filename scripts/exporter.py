@@ -122,7 +122,7 @@ class ExportTSDFMesh(Exporter):
     """Minimum of the bounding box, used if use_bounding_box is True."""
     bounding_box_max: Tuple[float, float, float] = (1, 1, 1)
     """Minimum of the bounding box, used if use_bounding_box is True."""
-    texture_method: Literal["tsdf", "nerf"] = "tsdf"
+    texture_method: Literal["tsdf", "nerf"] = "nerf"
     """Method to texture the mesh with. Either 'tsdf' or 'nerf'."""
     px_per_uv_triangle: int = 4
     """Number of pixels per UV triangle."""
@@ -130,7 +130,7 @@ class ExportTSDFMesh(Exporter):
     """The method to use for unwrapping the mesh."""
     num_pixels_per_side: int = 2048
     """If using xatlas for unwrapping, the pixels per side of the texture image."""
-    target_num_faces: Optional[int] = 500000
+    target_num_faces: Optional[int] = 100000
     """Target number of faces for the mesh to texture."""
 
     def main(self) -> None:
@@ -330,11 +330,11 @@ class ExportMarchingCubesMesh(Exporter):
     """Maximum of the bounding box."""
     px_per_uv_triangle: int = 4
     """Number of pixels per UV triangle."""
-    unwrap_method: Literal["xatlas", "custom"] = "xatlas"
+    unwrap_method: Literal["xatlas", "custom"] = "custom"
     """The method to use for unwrapping the mesh."""
     num_pixels_per_side: int = 2048
     """If using xatlas for unwrapping, the pixels per side of the texture image."""
-    target_num_faces: Optional[int] = None#50000
+    target_num_faces: Optional[int] = 100000
     """Target number of faces for the mesh to texture."""
 
     def main(self) -> None:

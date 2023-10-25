@@ -59,7 +59,7 @@ def _create_pyrender_scene(
     scene.add(light1, pose=light1_pose)
     scene.add(light2, pose=light2_pose)
     scene.add(light3, pose=light3_pose)
-    objs = trimesh.load_mesh(str(meshfile), file_type="ply")
+    objs = trimesh.load_mesh(str(meshfile))
 
     if not isinstance(objs, list):
         objs = [objs]

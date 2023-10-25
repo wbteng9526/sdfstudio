@@ -258,6 +258,7 @@ def render_trajectory(
                 CONSOLE.print(f"Please set --depth_output_name to one of: {outputs.keys()}", justify="center")
                 sys.exit(1)
             images.append(outputs[rgb_output_name].cpu().numpy())
+            outputs["depth"][outputs["accumulation"]<0.5] = 10
             depths.append(outputs[depth_output_name].cpu().numpy())
 
             

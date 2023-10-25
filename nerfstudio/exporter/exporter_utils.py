@@ -285,7 +285,7 @@ def render_trajectory(
             except:
                 pass
 
-            image = images[camera_idx]
+            image = np.copy(images[camera_idx])
             height, width, _ = image.shape
 
             box_size = 7

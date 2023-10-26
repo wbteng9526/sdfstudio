@@ -185,7 +185,7 @@ class TSDF:
 
         if mask_images is not None:
             raise NotImplementedError("Mask images are not supported yet.")
-
+        
         batch_size = c2w.shape[0]
         shape = self.voxel_coords.shape[1:]
 
@@ -219,9 +219,7 @@ class TSDF:
         del voxel_cam_points
 
         # Sample the depth images with grid sample...
-
         grid = voxel_pixel_coords.permute(0, 2, 1)  # [batch, N, 2]
-        # normalize grid to [-1, 1]
         grid = 2.0 * grid / image_size.view(1, 1, 2) - 1.0  # [batch, N, 2]
         grid = grid[:, None]  # [batch, 1, N, 2]
         # depth
@@ -344,7 +342,7 @@ def export_tsdf_mesh(
             K[i : i + batch_size],
             depth_images[i : i + batch_size],
             color_images=color_images[i : i + batch_size],
-        )
+        )  
 
     CONSOLE.print("Computing Mesh")
     mesh = tsdf.get_mesh()

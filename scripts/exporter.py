@@ -105,7 +105,6 @@ class ExportTSDFMesh(Exporter):
     """
     Export a mesh using TSDF processing.
     """
-
     downscale_factor: int = 1
     """Downscale the images starting from the resolution used for training."""
     depth_output_name: str = "depth"

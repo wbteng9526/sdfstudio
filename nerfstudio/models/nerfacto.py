@@ -113,7 +113,7 @@ class NerfactoModelConfig(ModelConfig):
     """Max num iterations for the annealing function."""
     use_single_jitter: bool = True
     """Whether use single jitter or not for the proposal networks."""
-    predict_normals: bool = False
+    predict_normals: bool = True
     """Whether to predict normals or not."""
 
 
@@ -293,11 +293,22 @@ class NerfactoModel(Model):
     def get_loss_dict(self, outputs, batch, metrics_dict=None):
         loss_dict = {}
         
+        # TODO: we can access rgb, accumulation, depth, weights, normals by outputs['rgb'], outputs['accumulation'], etc.
+        # Design loss functions that fully utilize these outputs from NeRF.
+
+        # e.g. the L1 loss of the first derivative of weights
+
         weights = outputs['weights']
         last_weights = torch.zeros_like(weights)
         last_weights[:,1:,:] = weights[:,0:weights.shape[1]-1,:]
         dwdt = weights-last_weights
-        loss_dict["weight_loss"] = torch.mean(torch.pow(dwdt, 2))
+
+        # After getting the loss value, use loss_dict['loss_name'] to store it. The losses in the loss_dict will be added up and backward updated.
+        loss_dict["weight_loss"] = torch.mean(torch.abs(dwdt))
+        
+
+        # loss_dict['acc_loss'] = torch.mean(0.1*torch.exp(-0.5 * (outputs["accumulation"] - 0.5)**2 / 0.02))
+        # loss_dict['acc_loss'] = torch.mean(0.01*outputs["accumulation"])
 
         image = batch["image"].to(self.device)
         loss_dict["rgb_loss"] = self.rgb_loss(image, outputs["rgb"])

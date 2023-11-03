@@ -149,6 +149,7 @@ def generate_point_cloud(
                 sys.exit(1)
             rgb = outputs[rgb_output_name]
             depth = outputs[depth_output_name]
+            depth[[outputs["accumulation"]<0.5]] = 10
             if normal_output_name is not None:
                 if normal_output_name not in outputs:
                     CONSOLE.rule("Error", style="red")
@@ -216,6 +217,7 @@ def render_trajectory(
     depth_output_name: str,
     rendered_resolution_scaling_factor: float = 1.0,
     disable_distortion: bool = False,
+    output_dir=r'export/',
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """Helper function to create a video of a trajectory.
 
@@ -263,47 +265,43 @@ def render_trajectory(
             depths.append(outputs[depth_output_name].cpu().numpy())
 
             
-            # if 'normals' in outputs:
-            #     if not os.path.exists('export/normals/'):
-            #         os.makedirs('export/normals/')
-            #     plt.imsave(f'export/normals/{camera_idx}.png', outputs["normals"].cpu().numpy())
-            # if not os.path.exists('export/images/'):
-            #     os.makedirs('export/images/')
-            # if not os.path.exists('export/depths/'):
-            #     os.makedirs('export/depths/')
-            # if not os.path.exists('export/accumulation/'):
-            #     os.makedirs('export/accumulation/')
-            # if not os.path.exists('export/weights/'):
-            #     os.makedirs('export/weights/')
-            # try: 
-            #     weights = outputs["weights"].cpu().numpy()
-            #     for i in range(weights.shape[0])[weights.shape[0]//2-3:weights.shape[0]//2+3]:
-            #         for j in range(weights.shape[1])[weights.shape[1]//2-3:weights.shape[1]//2+3]:
-            #             plt.plot(weights[i][j], label=f'{i} {j}')
-            #     plt.ylim(0,0.25)
-            #     plt.savefig(f'export/weights/{camera_idx}.png')
-            #     plt.clf()
-            # except:
-            #     pass
+            if not os.path.exists(output_dir/'images/'):
+                os.makedirs(output_dir/'images/')
+            if not os.path.exists(output_dir/'depths/'):
+                os.makedirs(output_dir/'depths/')
+            if not os.path.exists(output_dir/'accumulation/'):
+                os.makedirs(output_dir/'accumulation/')
+            if not os.path.exists(output_dir/'weights/'):
+                os.makedirs(output_dir/'weights/')
+            try: 
+                weights = outputs["weights"].cpu().numpy()
+                for i in range(weights.shape[0])[weights.shape[0]//2-3:weights.shape[0]//2+3]:
+                    for j in range(weights.shape[1])[weights.shape[1]//2-3:weights.shape[1]//2+3]:
+                        plt.plot(weights[i][j], label=f'{i} {j}')
+                plt.ylim(0,0.5)
+                plt.savefig(output_dir/f'weights/{camera_idx}.png')
+                plt.clf()
+            except:
+                pass
 
-            # image = np.array(images[camera_idx])
-            # height, width, _ = image.shape
+            image = np.array(images[camera_idx])
+            height, width, _ = image.shape
 
-            # box_size = 7
-            # top_left_x = (width - box_size) // 2
-            # top_left_y = (height - box_size) // 2
-            # bottom_right_x = top_left_x + box_size
-            # bottom_right_y = top_left_y + box_size
+            box_size = 7
+            top_left_x = (width - box_size) // 2
+            top_left_y = (height - box_size) // 2
+            bottom_right_x = top_left_x + box_size
+            bottom_right_y = top_left_y + box_size
 
-            # box_color = [1, 0, 0]
+            box_color = [1, 0, 0]
 
-            # image[top_left_y, top_left_x:bottom_right_x] = box_color
-            # image[bottom_right_y - 1, top_left_x:bottom_right_x] = box_color
-            # image[top_left_y:bottom_right_y, top_left_x] = box_color
-            # image[top_left_y:bottom_right_y, bottom_right_x - 1] = box_color
+            image[top_left_y, top_left_x:bottom_right_x] = box_color
+            image[bottom_right_y - 1, top_left_x:bottom_right_x] = box_color
+            image[top_left_y:bottom_right_y, top_left_x] = box_color
+            image[top_left_y:bottom_right_y, bottom_right_x - 1] = box_color
 
-            # plt.imsave(f'export/images/{camera_idx}.png', image)
-            # # plt.imsave(f'export/images/{camera_idx}.png', images[camera_idx])
-            # plt.imsave(f'export/depths/{camera_idx}.png', depths[camera_idx].squeeze())
-            # plt.imsave(f'export/accumulation/{camera_idx}.png', outputs['accumulation'].cpu().numpy().squeeze())
+            plt.imsave(output_dir/f'images/{camera_idx}.png', image)
+            # plt.imsave(foutput_dir/'images/{camera_idx}.png', images[camera_idx])
+            plt.imsave(output_dir/f'depths/{camera_idx}.png', depths[camera_idx].squeeze())
+            plt.imsave(output_dir/f'accumulation/{camera_idx}.png', outputs['accumulation'].cpu().numpy().squeeze())
     return images, depths

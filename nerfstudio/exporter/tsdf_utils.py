@@ -326,27 +326,28 @@ def export_tsdf_mesh(
         depth_output_name=depth_output_name,
         rendered_resolution_scaling_factor=1.0 / downscale_factor,
         disable_distortion=True,
+        output_dir=output_dir
     )
 
-    # camera extrinsics and intrinsics
-    c2w: TensorType["N", 3, 4] = cameras.camera_to_worlds.to(device)
-    # make c2w homogeneous
-    c2w = torch.cat([c2w, torch.zeros(c2w.shape[0], 1, 4, device=device)], dim=1)
-    c2w[:, 3, 3] = 1
-    K: TensorType["N", 3, 3] = cameras.get_intrinsics_matrices().to(device)
-    color_images = torch.tensor(np.array(color_images), device=device).permute(0, 3, 1, 2)  # shape (N, 3, H, W)
-    depth_images = torch.tensor(np.array(depth_images), device=device).permute(0, 3, 1, 2)  # shape (N, 1, H, W)
+    # # camera extrinsics and intrinsics
+    # c2w: TensorType["N", 3, 4] = cameras.camera_to_worlds.to(device)
+    # # make c2w homogeneous
+    # c2w = torch.cat([c2w, torch.zeros(c2w.shape[0], 1, 4, device=device)], dim=1)
+    # c2w[:, 3, 3] = 1
+    # K: TensorType["N", 3, 3] = cameras.get_intrinsics_matrices().to(device)
+    # color_images = torch.tensor(np.array(color_images), device=device).permute(0, 3, 1, 2)  # shape (N, 3, H, W)
+    # depth_images = torch.tensor(np.array(depth_images), device=device).permute(0, 3, 1, 2)  # shape (N, 1, H, W)
 
-    CONSOLE.print("Integrating the TSDF")
-    for i in range(0, len(c2w), batch_size):
-        tsdf.integrate_tsdf(
-            c2w[i : i + batch_size],
-            K[i : i + batch_size],
-            depth_images[i : i + batch_size],
-            color_images=color_images[i : i + batch_size],
-        )
+    # CONSOLE.print("Integrating the TSDF")
+    # for i in range(0, len(c2w), batch_size):
+    #     tsdf.integrate_tsdf(
+    #         c2w[i : i + batch_size],
+    #         K[i : i + batch_size],
+    #         depth_images[i : i + batch_size],
+    #         # color_images=color_images[i : i + batch_size],
+    #     )
 
-    CONSOLE.print("Computing Mesh")
-    mesh = tsdf.get_mesh()
-    CONSOLE.print("Saving TSDF Mesh")
-    tsdf.export_mesh(mesh, filename=str(output_dir / "tsdf_mesh.ply"))
+    # CONSOLE.print("Computing Mesh")
+    # mesh = tsdf.get_mesh()
+    # CONSOLE.print("Saving TSDF Mesh")
+    # tsdf.export_mesh(mesh, filename=str(output_dir / "tsdf_mesh.ply"))

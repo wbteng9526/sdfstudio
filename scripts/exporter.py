@@ -120,9 +120,9 @@ class ExportTSDFMesh(Exporter):
     """Whether to use a bounding box for the TSDF volume."""
     bounding_box_min: Tuple[float, float, float] = (-1, -1, -1)
     """Minimum of the bounding box, used if use_bounding_box is True."""
-    bounding_box_max: Tuple[float, float, float] = (1, 1, 1)
+    bounding_box_max: Tuple[float, float, float] = (1, 1, -1)
     """Minimum of the bounding box, used if use_bounding_box is True."""
-    texture_method: Literal["tsdf", "nerf"] = "nerf"
+    texture_method: Literal["tsdf", "nerf"] = "tsdf"
     """Method to texture the mesh with. Either 'tsdf' or 'nerf'."""
     px_per_uv_triangle: int = 4
     """Number of pixels per UV triangle."""
@@ -187,11 +187,11 @@ class ExportPoissonMesh(Exporter):
     """Name of the depth output."""
     rgb_output_name: str = "rgb"
     """Name of the RGB output."""
-    normal_method: Literal["open3d", "model_output"] = "open3d"
+    normal_method: Literal["open3d", "model_output"] = "model_output"
     """Method to estimate normals with."""
     normal_output_name: str = "normals"
     """Name of the normal output."""
-    save_point_cloud: bool = False
+    save_point_cloud: bool = True
     """Whether to save the point cloud."""
     use_bounding_box: bool = True
     """Only query points within the bounding box"""
@@ -290,20 +290,20 @@ class ExportPoissonMesh(Exporter):
 
         # This will texture the mesh with NeRF and export to a mesh.obj file
         # and a material and texture file
-        if self.texture_method == "nerf":
-            # load the mesh from the poisson reconstruction
-            mesh = get_mesh_from_filename(
-                str(self.output_dir / "poisson_mesh.ply"), target_num_faces=self.target_num_faces
-            )
-            CONSOLE.print("Texturing mesh with NeRF")
-            texture_utils.export_textured_mesh(
-                mesh,
-                pipeline,
-                self.output_dir,
-                px_per_uv_triangle=self.px_per_uv_triangle if self.unwrap_method == "custom" else None,
-                unwrap_method=self.unwrap_method,
-                num_pixels_per_side=self.num_pixels_per_side,
-            )
+        # if self.texture_method == "nerf":
+        #     # load the mesh from the poisson reconstruction
+        #     mesh = get_mesh_from_filename(
+        #         str(self.output_dir / "poisson_mesh.ply"), target_num_faces=self.target_num_faces
+        #     )
+        #     CONSOLE.print("Texturing mesh with NeRF")
+        #     texture_utils.export_textured_mesh(
+        #         mesh,
+        #         pipeline,
+        #         self.output_dir,
+        #         px_per_uv_triangle=self.px_per_uv_triangle if self.unwrap_method == "custom" else None,
+        #         unwrap_method=self.unwrap_method,
+        #         num_pixels_per_side=self.num_pixels_per_side,
+        #     )
 
 
 @dataclass
@@ -369,17 +369,17 @@ class ExportMarchingCubesMesh(Exporter):
         filename = self.output_dir / "sdf_marching_cubes_mesh.ply"
         multi_res_mesh.export(filename)
 
-        # load the mesh from the marching cubes export
-        mesh = get_mesh_from_filename(str(filename), target_num_faces=self.target_num_faces)
-        CONSOLE.print("Texturing mesh with NeRF...")
-        texture_utils.export_textured_mesh(
-            mesh,
-            pipeline,
-            self.output_dir,
-            px_per_uv_triangle=self.px_per_uv_triangle if self.unwrap_method == "custom" else None,
-            unwrap_method=self.unwrap_method,
-            num_pixels_per_side=self.num_pixels_per_side,
-        )
+        # # load the mesh from the marching cubes export
+        # mesh = get_mesh_from_filename(str(filename), target_num_faces=self.target_num_faces)
+        # CONSOLE.print("Texturing mesh with NeRF...")
+        # texture_utils.export_textured_mesh(
+        #     mesh,
+        #     pipeline,
+        #     self.output_dir,
+        #     px_per_uv_triangle=self.px_per_uv_triangle if self.unwrap_method == "custom" else None,
+        #     unwrap_method=self.unwrap_method,
+        #     num_pixels_per_side=self.num_pixels_per_side,
+        # )
 
 
 Commands = Union[

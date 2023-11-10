@@ -177,6 +177,7 @@ class NerfactoModel(Model):
             num_proposal_network_iterations=self.config.num_proposal_iterations,
             single_jitter=self.config.use_single_jitter,
             update_sched=update_schedule,
+            use_uniform_sampler=True
         )
 
         # Collider
@@ -255,6 +256,7 @@ class NerfactoModel(Model):
             "accumulation": accumulation,
             "depth": depth,
             "weights": weights,
+            "steps": (ray_samples.frustums.starts + ray_samples.frustums.ends) / 2,
         }
 
         if self.config.predict_normals:
@@ -296,19 +298,41 @@ class NerfactoModel(Model):
         # TODO: we can access rgb, accumulation, depth, weights, normals by outputs['rgb'], outputs['accumulation'], etc.
         # Design loss functions that fully utilize these outputs from NeRF.
 
-        # e.g. the L1 loss of the first derivative of weights
-
+        eps = 1e-8
         weights = outputs['weights']
-        last_weights = torch.zeros_like(weights)
-        last_weights[:,1:,:] = weights[:,0:weights.shape[1]-1,:]
-        dwdt = weights-last_weights
+        accumulation = outputs['accumulation'].unsqueeze(1)
+        # steps = outputs['steps']
+        # depth = outputs['depth'].unsqueeze(1)
 
-        # After getting the loss value, use loss_dict['loss_name'] to store it. The losses in the loss_dict will be added up and backward updated.
-        loss_dict["weight_loss"] = torch.mean(torch.abs(dwdt))
+
+        steps = torch.range(1,48).reshape((-1,1)).to('cuda')
+        steps = steps.repeat(weights.shape[0], 1).view(weights.shape[0], weights.shape[1], 1)
+
+        weighted_sum = torch.sum(weights * steps, dim=1, keepdim=True)
+        sum_of_weights = torch.sum(weights, dim=1, keepdim=True) + eps
+        weighted_mean = weighted_sum / sum_of_weights
+        weighted_variance = torch.sum(weights * (steps - weighted_mean) ** 2, dim=1, keepdim=True) / sum_of_weights
+        weighted_std = torch.sqrt(weighted_variance)
+
+        target_gaussian = torch.exp(-0.5 * ((steps - weighted_mean) / weighted_std) ** 2)
+        target_gaussian = target_gaussian / torch.sum(target_gaussian, dim=1, keepdim=True)
+        # target_gaussian = torch.where(torch.sum(target_gaussian, dim=1, keepdim=True)>1, target_gaussian / torch.sum(target_gaussian, dim=1, keepdim=True), target_gaussian)
+
+        gaussian_loss = (weights - target_gaussian)**2*10
+        gaussian_loss *= accumulation
+        # gaussian_loss *= torch.max(weights, dim=1, keepdim=True)[0]*10
+        loss_dict['gaussian_loss'] = weighted_std.mean()
+        
+    
+
+
+        # print(torch.sum(weights).item())
+        # print(gaussian_loss.mean().item(), weighted_sum.mean().item(), weighted_mean.mean().item(), weighted_variance.mean().item(), weighted_std.mean().item())
         
 
-        # loss_dict['acc_loss'] = torch.mean(0.1*torch.exp(-0.5 * (outputs["accumulation"] - 0.5)**2 / 0.02))
-        # loss_dict['acc_loss'] = torch.mean(0.01*outputs["accumulation"])
+        # loss_dict['weight_loss'] = weights.mean()
+        
+
 
         image = batch["image"].to(self.device)
         loss_dict["rgb_loss"] = self.rgb_loss(image, outputs["rgb"])

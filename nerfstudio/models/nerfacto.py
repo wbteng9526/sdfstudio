@@ -321,7 +321,7 @@ class NerfactoModel(Model):
         gaussian_loss = (weights - target_gaussian)**2*10
         gaussian_loss *= accumulation
         # gaussian_loss *= torch.max(weights, dim=1, keepdim=True)[0]*10
-        loss_dict['gaussian_loss'] = weighted_std.mean()
+        loss_dict['gaussian_loss'] = gaussian_loss.mean()
         
     
 

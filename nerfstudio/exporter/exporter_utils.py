@@ -273,21 +273,34 @@ def render_trajectory(
                 os.makedirs(output_dir/'accumulation/')
             if not os.path.exists(output_dir/'weights/'):
                 os.makedirs(output_dir/'weights/')
-            try: 
-                weights = outputs["weights"].cpu().numpy()
-                for i in range(weights.shape[0])[weights.shape[0]//2-3:weights.shape[0]//2+3]:
-                    for j in range(weights.shape[1])[weights.shape[1]//2-3:weights.shape[1]//2+3]:
-                        plt.plot(weights[i][j], label=f'{i} {j}')
-                plt.ylim(0,0.5)
-                plt.savefig(output_dir/f'weights/{camera_idx}.png')
-                plt.clf()
-            except:
-                pass
+            # try: 
+            weights = outputs["weights"]
+            steps = outputs["steps"]
+
+            weighted_sum = torch.sum(weights * steps, dim=2, keepdim=True)
+            sum_of_weights = torch.sum(weights, dim=2, keepdim=True) + 1e-8
+            weighted_mean = weighted_sum / sum_of_weights
+            weighted_variance = torch.sum(weights * (steps - weighted_mean) ** 2, dim=2, keepdim=True) / sum_of_weights
+            weighted_std = torch.sqrt(weighted_variance)
+
+            weights = weights.cpu()
+            steps = steps.cpu()
+            weighted_std = weighted_std.cpu()
+
+            for i in range(weights.shape[0])[weights.shape[0]//2-2:weights.shape[0]//2+2]:
+                for j in range(weights.shape[1])[weights.shape[1]//2-2:weights.shape[1]//2+2]:
+                    plt.plot(steps[i][j], weights[i][j], label=f'std: {weighted_std[i][j].item()}')
+            plt.ylim(0,0.5)
+            plt.legend()
+            plt.savefig(output_dir/f'weights/{camera_idx}.png')
+            plt.clf()
+            # except:
+            #     pass
 
             image = np.array(images[camera_idx])
             height, width, _ = image.shape
 
-            box_size = 7
+            box_size = 5
             top_left_x = (width - box_size) // 2
             top_left_y = (height - box_size) // 2
             bottom_right_x = top_left_x + box_size

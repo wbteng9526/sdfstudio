@@ -298,37 +298,36 @@ class NerfactoModel(Model):
         # TODO: we can access rgb, accumulation, depth, weights, normals by outputs['rgb'], outputs['accumulation'], etc.
         # Design loss functions that fully utilize these outputs from NeRF.
 
-        eps = 1e-8
+        def target_gaussian(weights):
+            eps = 1e-8
+            steps = torch.range(1,weights.shape[1]).reshape((-1,1)).to('cuda')
+            steps = steps.repeat(weights.shape[0], 1).view(weights.shape[0], weights.shape[1], 1)
+
+            weighted_sum = torch.sum(weights * steps, dim=1, keepdim=True)
+            sum_of_weights = torch.sum(weights, dim=1, keepdim=True) + eps
+            weighted_mean = weighted_sum / sum_of_weights
+            weighted_variance = torch.sum(weights * (steps - weighted_mean) ** 2, dim=1, keepdim=True) / sum_of_weights
+            weighted_std = torch.sqrt(weighted_variance) + eps
+
+            target_gaussian = torch.exp(-0.5 * ((steps - weighted_mean) / weighted_std) ** 2)
+            target_gaussian = target_gaussian / (torch.sum(target_gaussian, dim=1, keepdim=True) + eps)
+            return target_gaussian
+
+        
         weights = outputs['weights']
         accumulation = outputs['accumulation'].unsqueeze(1)
-        # steps = outputs['steps']
-        # depth = outputs['depth'].unsqueeze(1)
+        steps = outputs['steps']
+        depth = outputs['depth'].unsqueeze(1)
 
+        # mask = torch.abs(steps - depth) < torch.std(steps, dim=1, keepdim=True)
+        # weights = weights * mask.float()
 
-        steps = torch.range(1,48).reshape((-1,1)).to('cuda')
-        steps = steps.repeat(weights.shape[0], 1).view(weights.shape[0], weights.shape[1], 1)
-
-        weighted_sum = torch.sum(weights * steps, dim=1, keepdim=True)
-        sum_of_weights = torch.sum(weights, dim=1, keepdim=True) + eps
-        weighted_mean = weighted_sum / sum_of_weights
-        weighted_variance = torch.sum(weights * (steps - weighted_mean) ** 2, dim=1, keepdim=True) / sum_of_weights
-        weighted_std = torch.sqrt(weighted_variance)
-
-        target_gaussian = torch.exp(-0.5 * ((steps - weighted_mean) / weighted_std) ** 2)
-        target_gaussian = target_gaussian / torch.sum(target_gaussian, dim=1, keepdim=True)
-        # target_gaussian = torch.where(torch.sum(target_gaussian, dim=1, keepdim=True)>1, target_gaussian / torch.sum(target_gaussian, dim=1, keepdim=True), target_gaussian)
-
-        gaussian_loss = (weights - target_gaussian)**2*10
+        gaussian = target_gaussian(weights)
+        gaussian_loss = (weights - gaussian)**2 * 10
         gaussian_loss *= accumulation
         # gaussian_loss *= torch.max(weights, dim=1, keepdim=True)[0]*10
         loss_dict['gaussian_loss'] = gaussian_loss.mean()
-        
-    
-
-
-        # print(torch.sum(weights).item())
-        # print(gaussian_loss.mean().item(), weighted_sum.mean().item(), weighted_mean.mean().item(), weighted_variance.mean().item(), weighted_std.mean().item())
-        
+          
 
         # loss_dict['weight_loss'] = weights.mean()
         

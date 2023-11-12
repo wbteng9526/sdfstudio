@@ -53,6 +53,7 @@ Install [Chamfer distance](https://github.com/otaheri/chamfer_distance/tree/mast
 ```bash
 pip install "git+https://github.com/facebookresearch/pytorch3d.git@stable"
 pip install git+'https://github.com/otaheri/chamfer_distance'
+pip install pyrender trimesh jaxtyping
 ```
 
 ### Installing SDFStudio

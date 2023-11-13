@@ -305,7 +305,6 @@ class NerfactoModel(Model):
         # steps = outputs['steps']
         # depth = outputs['depth'].unsqueeze(1)
 
-
         steps = torch.range(1,48).reshape((-1,1)).to('cuda')
         steps = steps.repeat(weights.shape[0], 1).view(weights.shape[0], weights.shape[1], 1)
 

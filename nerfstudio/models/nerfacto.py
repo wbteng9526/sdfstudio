@@ -292,6 +292,7 @@ class NerfactoModel(Model):
             metrics_dict["distortion"] = distortion_loss(outputs["weights_list"], outputs["ray_samples_list"])
         return metrics_dict
 
+#rong code
     def get_loss_dict(self, outputs, batch, metrics_dict=None):
         loss_dict = {}
         

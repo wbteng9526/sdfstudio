@@ -276,7 +276,7 @@ def render_trajectory(
             # try: 
             weights = outputs["weights"]
             steps = outputs["steps"]
-
+            
             weighted_sum = torch.sum(weights * steps, dim=2, keepdim=True)
             sum_of_weights = torch.sum(weights, dim=2, keepdim=True) + 1e-8
             weighted_mean = weighted_sum / sum_of_weights
@@ -290,6 +290,10 @@ def render_trajectory(
             for i in range(weights.shape[0])[weights.shape[0]//2-2:weights.shape[0]//2+2]:
                 for j in range(weights.shape[1])[weights.shape[1]//2-2:weights.shape[1]//2+2]:
                     plt.plot(steps[i][j], weights[i][j], label=f'std: {weighted_std[i][j].item()}')
+                    depth_value = depths[camera_idx][i, j].item()
+                    #plt.text(steps[i][j][-1], weights[i][j][-1], f'{depth_value:.2f}', fontsize=8)
+                    plt.axvline(x=depth_value, color=plt.gca().lines[-1].get_color(), linestyle='--', linewidth=1)
+
             plt.ylim(0,0.5)
             plt.legend()
             plt.savefig(output_dir/f'weights/{camera_idx}.png')
@@ -317,4 +321,5 @@ def render_trajectory(
             # plt.imsave(foutput_dir/'images/{camera_idx}.png', images[camera_idx])
             plt.imsave(output_dir/f'depths/{camera_idx}.png', depths[camera_idx].squeeze())
             plt.imsave(output_dir/f'accumulation/{camera_idx}.png', outputs['accumulation'].cpu().numpy().squeeze())
+
     return images, depths

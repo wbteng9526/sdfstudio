@@ -196,3 +196,5 @@ camera_paths/
 vis_results/
 W/
 *.ply
+
+run_train.sh

@@ -28,6 +28,8 @@ from torchmetrics.image import PeakSignalNoiseRatio
 from torchmetrics.functional import structural_similarity_index_measure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 from typing_extensions import Literal
+from rich.console import Console
+CONSOLE = Console(width=120)
 
 from nerfstudio.cameras.rays import RayBundle
 from nerfstudio.engine.callbacks import (
@@ -303,7 +305,10 @@ class NerfactoModel(Model):
         weights = outputs['weights']
         accumulation = outputs['accumulation'].unsqueeze(1)
         # steps = outputs['steps']
-        # depth = outputs['depth'].unsqueeze(1)
+        #depth = outputs['depth']
+
+        # CONSOLE.print(f"Size of weights tensor: {weights.shape}")
+        # CONSOLE.print(f"Size of depth tensor: {depth.shape}")
 
         steps = torch.range(1,48).reshape((-1,1)).to('cuda')
         steps = steps.repeat(weights.shape[0], 1).view(weights.shape[0], weights.shape[1], 1)
@@ -323,8 +328,6 @@ class NerfactoModel(Model):
         # gaussian_loss *= torch.max(weights, dim=1, keepdim=True)[0]*10
         loss_dict['gaussian_loss'] = gaussian_loss.mean()
         
-    
-
 
         # print(torch.sum(weights).item())
         # print(gaussian_loss.mean().item(), weighted_sum.mean().item(), weighted_mean.mean().item(), weighted_variance.mean().item(), weighted_std.mean().item())

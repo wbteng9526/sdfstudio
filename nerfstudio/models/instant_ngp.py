@@ -245,7 +245,8 @@ class NGPModel(Model):
         )
         alive_ray_mask = colormaps.apply_colormap(outputs["alive_ray_mask"])
 
-        combined_rgb = torch.cat([image, rgb], dim=1)
+        combined_rgb = torch.cat([rgb], dim=1)
+        combined_gt = torch.cat([image], dim=1)
         combined_acc = torch.cat([acc], dim=1)
         combined_depth = torch.cat([depth], dim=1)
         combined_alive_ray_mask = torch.cat([alive_ray_mask], dim=1)
@@ -264,6 +265,7 @@ class NGPModel(Model):
 
         images_dict = {
             "img": combined_rgb,
+            "gt": combined_gt,
             "accumulation": combined_acc,
             "depth": combined_depth,
             "alive_ray_mask": combined_alive_ray_mask,

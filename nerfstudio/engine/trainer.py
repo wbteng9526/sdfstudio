@@ -317,8 +317,8 @@ class Trainer:
         for _ in range(self.config.trainer.accumulate_grad_steps):
             with torch.autocast(device_type=cpu_or_cuda_str, enabled=self.mixed_precision):
                 _, loss_dict, metrics_dict = self.pipeline.get_train_loss_dict(step=step)
-                if step < self.config.trainer.max_num_iterations/2:
-                    del loss_dict["gaussian_loss"]
+                # if step < self.config.trainer.max_num_iterations/2:
+                #     del loss_dict["gaussian_loss"]
                 # loss_dict["weight_loss"] *= max(0, (self.config.trainer.max_num_iterations/10 - step)/(self.config.trainer.max_num_iterations/10))
                 loss = functools.reduce(torch.add, loss_dict.values())
             self.grad_scaler.scale(loss).backward()  # type: ignore
